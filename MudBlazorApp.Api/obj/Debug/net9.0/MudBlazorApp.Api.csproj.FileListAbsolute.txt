@@ -1,8 +1,0 @@
-C:\dev\2025Stuff\2025JulyProjects\MudBlazor\MudBlazorApp.Api\obj\Debug\net9.0\MudBlazorApp.Api.csproj.AssemblyReference.cache
-C:\dev\2025Stuff\2025JulyProjects\MudBlazor\MudBlazorApp.Api\obj\Debug\net9.0\MudBlazorApp.Api.GeneratedMSBuildEditorConfig.editorconfig
-C:\dev\2025Stuff\2025JulyProjects\MudBlazor\MudBlazorApp.Api\obj\Debug\net9.0\MudBlazorApp.Api.AssemblyInfoInputs.cache
-C:\dev\2025Stuff\2025JulyProjects\MudBlazor\MudBlazorApp.Api\obj\Debug\net9.0\MudBlazorApp.Api.AssemblyInfo.cs
-C:\dev\2025Stuff\2025JulyProjects\MudBlazor\MudBlazorApp.Api\obj\Debug\net9.0\MudBlazorApp.Api.csproj.CoreCompileInputs.cache
-C:\dev\2025Stuff\2025JulyProjects\MudBlazor\MudBlazorApp.Api\obj\Debug\net9.0\MudBlazorApp.Api.MvcApplicationPartsAssemblyInfo.cs
-C:\dev\2025Stuff\2025JulyProjects\MudBlazor\MudBlazorApp.Api\obj\Debug\net9.0\MudBlazorApp.Api.MvcApplicationPartsAssemblyInfo.cache
-C:\dev\2025Stuff\2025JulyProjects\MudBlazor\MudBlazorApp.Api\obj\Debug\net9.0\MudBlazorApp.Api.sourcelink.json

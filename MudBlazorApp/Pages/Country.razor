@@ -1,43 +1,42 @@
+
 @page "/country"
 @inherits CountryBase
+@using MudBlazor
 
-<PageTitle>Country Information</PageTitle>
+<MudPaper Class="pa-4">
+    <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween" Class="mb-3">
+        <MudSelect T="string" Label="Sort by" @bind-Value="SortOption" Dense="true" Style="width: 300px;">
+            <MudSelectItem Value="@("custom")">Custom</MudSelectItem>
+            <MudSelectItem Value="@("verified_desc")">Verified DESC</MudSelectItem>
+            <MudSelectItem Value="@("name_asc")">Name ASC</MudSelectItem>
+            <MudSelectItem Value="@("last_modified_desc")">Last Modified DESC</MudSelectItem>
+        </MudSelect>
 
-<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
-    <MudCard>
-        <MudCardHeader>
-            <MudText Typo="Typo.h4">Country Information</MudText>
-        </MudCardHeader>
-        <MudCardContent>
-            <MudGrid>
-                <MudItem xs="12">
-                    <MudPaper Class="pa-4">
-                        <MudText Typo="Typo.h6">Welcome to the Country Information Page</MudText>
-                        <MudDivider Class="my-4"/>
-                        <MudText>This is a sample page demonstrating MudBlazor components.</MudText>
-                    </MudPaper>
-                </MudItem>
-                <MudItem xs="12">
-                    <MudPaper Class="pa-4 mt-2">
-                        <MudSelect T="string" Label="Select a Country" @bind-Value="SelectedCountry">
-                            @foreach (var country in Countries)
-                            {
-                                <MudSelectItem Value="@country">@country</MudSelectItem>
-                            }
-                        </MudSelect>
-                        
-                        @if (!string.IsNullOrEmpty(SelectedCountry))
-                        {
-                            <MudAlert Class="mt-4" Severity="Severity.Success">
-                                You selected: @SelectedCountry
-                            </MudAlert>
-                        }
-                    </MudPaper>
-                </MudItem>
-            </MudGrid>
-        </MudCardContent>
-        <MudCardActions>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" @onclick="ResetSelection">Reset</MudButton>
-        </MudCardActions>
-    </MudCard>
-</MudContainer>
+        <MudStack Row AlignItems="AlignItems.Center" Spacing="2">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@AddNew">Add New</MudButton>
+            <MudText Typo="Typo.body2">Results: @Countries.Count</MudText>
+        </MudStack>
+    </MudStack>
+
+    <MudPaper Style="max-width: 750px; margin: auto;">
+        <MudTable Items="@Countries" Hover="true" Dense="true" Elevation="0">
+            <HeaderContent>
+                <MudTh Style="background-color:black; color:white;">ID</MudTh>
+                <MudTh Style="background-color:black; color:white;">Name</MudTh>
+                <MudTh Style="background-color:black; color:white;">Verified?</MudTh>
+                <MudTh Style="background-color:black; color:white;"></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="ID">@context.Id</MudTd>
+                <MudTd DataLabel="Name">@context.Name</MudTd>
+                <MudTd DataLabel="Verified">@((context.Verified) ? "Yes" : "No")</MudTd>
+                <MudTd>
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary" OnClick="@(() => Edit(context))" />
+                    <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="@(() => ViewDetails(context))">View Details</MudButton>
+                </MudTd>
+            </RowTemplate>
+        </MudTable>
+    </MudPaper>
+</MudPaper>
+
+

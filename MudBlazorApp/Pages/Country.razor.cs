@@ -3,27 +3,46 @@ using System.Collections.Generic;
 
 namespace MudBlazorApp.Pages
 {
+    public partial class Country : CountryBase
+    {
+     
+    }
     public class CountryBase : ComponentBase
     {
-        protected string SelectedCountry { get; set; } = string.Empty;
+        protected string SortOption = "custom";
 
-        protected List<string> Countries { get; set; } = new List<string>
+        protected List<CountryModel> Countries = new()
         {
-            "United States",
-            "Canada",
-            "United Kingdom",
-            "Germany",
-            "France",
-            "Japan",
-            "Australia",
-            "Brazil",
-            "India",
-            "China"
+            new CountryModel { Id = -2, Name = "Afghanistan", Verified = true },
+            new CountryModel { Id = 2, Name = "Albania", Verified = true },
+            new CountryModel { Id = 3, Name = "Algeria", Verified = true },
+            new CountryModel { Id = 4, Name = "Andorra", Verified = false },
+            new CountryModel { Id = 5, Name = "Angola", Verified = true },
+            new CountryModel { Id = 6, Name = "Argentina", Verified = true },
+            new CountryModel { Id = 7, Name = "Armenia", Verified = false },
+            // Add more stubbed entries as needed
         };
 
-        protected void ResetSelection()
+        protected void AddNew()
         {
-            SelectedCountry = string.Empty;
+            // Stub: handle add new
+        }
+
+        protected void Edit(CountryModel country)
+        {
+            // Stub: handle edit
+        }
+
+        protected void ViewDetails(CountryModel country)
+        {
+            // Stub: handle view details
+        }
+
+        public class CountryModel
+        {
+            public int Id { get; set; }
+            public string Name { get; set; } = string.Empty;
+            public bool Verified { get; set; }
         }
     }
 }

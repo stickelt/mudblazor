@@ -1,0 +1,43 @@
+@page "/country"
+@inherits CountryBase
+
+<PageTitle>Country Information</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Medium" Class="mt-4">
+    <MudCard>
+        <MudCardHeader>
+            <MudText Typo="Typo.h4">Country Information</MudText>
+        </MudCardHeader>
+        <MudCardContent>
+            <MudGrid>
+                <MudItem xs="12">
+                    <MudPaper Class="pa-4">
+                        <MudText Typo="Typo.h6">Welcome to the Country Information Page</MudText>
+                        <MudDivider Class="my-4"/>
+                        <MudText>This is a sample page demonstrating MudBlazor components.</MudText>
+                    </MudPaper>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudPaper Class="pa-4 mt-2">
+                        <MudSelect T="string" Label="Select a Country" @bind-Value="SelectedCountry">
+                            @foreach (var country in Countries)
+                            {
+                                <MudSelectItem Value="@country">@country</MudSelectItem>
+                            }
+                        </MudSelect>
+                        
+                        @if (!string.IsNullOrEmpty(SelectedCountry))
+                        {
+                            <MudAlert Class="mt-4" Severity="Severity.Success">
+                                You selected: @SelectedCountry
+                            </MudAlert>
+                        }
+                    </MudPaper>
+                </MudItem>
+            </MudGrid>
+        </MudCardContent>
+        <MudCardActions>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="ml-auto" @onclick="ResetSelection">Reset</MudButton>
+        </MudCardActions>
+    </MudCard>
+</MudContainer>

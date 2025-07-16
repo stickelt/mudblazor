@@ -1,0 +1,6 @@
+@MudBlazorApp.Api_HostAddress = http://localhost:5076
+
+GET {{MudBlazorApp.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

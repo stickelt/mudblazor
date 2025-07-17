@@ -5,6 +5,7 @@ using MudBlazor;
 using System.Threading.Tasks;
 using System.Net.Http;
 using System.Net.Http.Json;
+using MudBlazorApp.Models;
 
 namespace MudBlazorApp.Pages
 {
@@ -19,6 +20,9 @@ namespace MudBlazorApp.Pages
 
         [Inject]
         private HttpClient Http { get; set; } = default!;
+
+        [Inject]
+        private NavigationManager Navigation { get; set; } = default!;
 
         protected string SortOption = "custom";
         protected List<CountryModel> Countries { get; set; } = new();
@@ -89,15 +93,10 @@ namespace MudBlazorApp.Pages
 
         protected void ViewDetails(CountryModel country)
         {
-            // Stub: handle view details
+            Navigation.NavigateTo($"/country/{country.Id}");
         }
 
-        public class CountryModel
-        {
-            public int Id { get; set; }
-            public string Name { get; set; } = string.Empty;
-            public bool Verified { get; set; }
-        }
+
 
         public class ConfigSettings
         {

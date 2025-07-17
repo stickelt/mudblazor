@@ -1,11 +1,12 @@
 using Microsoft.AspNetCore.Components;
-using System.Collections.Generic;
-using Microsoft.JSInterop;
+using Microsoft.AspNetCore.Components.Web;
 using MudBlazor;
-using System.Threading.Tasks;
+using MudBlazorApp.Models;
+using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Json;
-using MudBlazorApp.Models;
+using System.Threading.Tasks;
 
 namespace MudBlazorApp.Pages
 {
@@ -15,11 +16,24 @@ namespace MudBlazorApp.Pages
     }
     public class CountryBase : ComponentBase
     {
-        [Inject]
-        private ISnackbar Snackbar { get; set; } = default!;
+        protected string searchString = "";
+    private bool sortNameByLength;
+    protected int elementsCount = 0;
+    
+    [Inject]
+    private HttpClient Http { get; set; } = default!;
+
+    
+    
+    protected CountryModel? selectedCountry = null;
+    protected bool isLoadingDetails = false;
+    protected bool showingDetails = false;
+    
+    [Parameter]
+    public int? Id { get; set; }
 
         [Inject]
-        private HttpClient Http { get; set; } = default!;
+        private ISnackbar Snackbar { get; set; } = default!;
 
         [Inject]
         private NavigationManager Navigation { get; set; } = default!;
@@ -32,6 +46,22 @@ namespace MudBlazorApp.Pages
         protected override async Task OnInitializedAsync()
         {
             await LoadCountriesAsync();
+        }
+        
+        protected override async Task OnParametersSetAsync()
+        {
+            // This runs every time the parameters change (including when the component first loads)
+            // If ID parameter is provided, load the country details
+            if (Id.HasValue)
+            {
+                await LoadCountryDetails(Id.Value);
+            }
+            else
+            {
+                // If no ID is provided, show the list view
+                showingDetails = false;
+                selectedCountry = null;
+            }
         }
 
         private async Task LoadCountriesAsync()
@@ -49,29 +79,32 @@ namespace MudBlazorApp.Pages
                 if (result != null)
                 {
                     Countries = result;
-                    Snackbar.Add($"Loaded {Countries.Count} countries from database", Severity.Success);
-                }
-                else
-                {
-                    ErrorMessage = "No countries returned from API";
-                    Snackbar.Add(ErrorMessage, Severity.Warning);
                 }
             }
             catch (Exception ex)
             {
-                ErrorMessage = $"Error loading countries from API: {ex.Message}";
-                Snackbar.Add(ErrorMessage, Severity.Error);
-                
-                // Fallback to mock data if API fails
-                Countries = new List<CountryModel>()
+                ErrorMessage = $"Error: {ex.Message}";
+                // Fallback to mock data
+                Countries = new List<CountryModel>
                 {
-                    new CountryModel { Id = 1, Name = "Afghanistan (Mock)", Verified = true },
-                    new CountryModel { Id = 2, Name = "Albania (Mock)", Verified = true },
-                    new CountryModel { Id = 3, Name = "Algeria (Mock)", Verified = true },
-                    new CountryModel { Id = 4, Name = "Andorra (Mock)", Verified = true },
+                    new CountryModel { Id = 1, Name = "United States (Mock)", Verified = true },
+                    new CountryModel { Id = 2, Name = "Canada (Mock)", Verified = true },
+                    new CountryModel { Id = 3, Name = "Mexico (Mock)", Verified = true },
+                    new CountryModel { Id = 4, Name = "United Kingdom (Mock)", Verified = true }
                 };
+
+                Snackbar.Add("Using mock data because API is not available", Severity.Warning);
                 
-                Snackbar.Add("Loaded mock data as fallback", Severity.Info);
+                // If ID parameter is provided, try to find in mock data
+                if (Id.HasValue)
+                {
+                    var mockCountry = Countries.FirstOrDefault(c => c.Id == Id.Value);
+                    if (mockCountry != null)
+                    {
+                        selectedCountry = mockCountry;
+                        showingDetails = true;
+                    }
+                }
             }
             finally
             {
@@ -91,12 +124,40 @@ namespace MudBlazorApp.Pages
             // Stub: handle edit
         }
 
-        protected void ViewDetails(CountryModel country)
+        protected void BackToList()
         {
-            Navigation.NavigateTo($"/country/{country.Id}");
+            // Navigate back to the list URL
+            Navigation.NavigateTo("/country");
         }
 
-
+        protected async Task LoadCountryDetails(int id)
+    {
+        try
+        {
+            isLoadingDetails = true;
+            
+            // Fetch the detailed country data
+            var apiUrl = $"http://localhost:5200/api/country/{id}";
+            selectedCountry = await Http.GetFromJsonAsync<CountryModel>(apiUrl);
+            
+            // Show details view
+            showingDetails = true;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error loading details: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            isLoadingDetails = false;
+        }
+    }
+    
+    protected void ViewDetails(CountryModel country)
+    {
+        // Navigate to the country details URL
+        Navigation.NavigateTo($"/country/{country.Id}");
+    }   
 
         public class ConfigSettings
         {

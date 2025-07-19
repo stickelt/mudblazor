@@ -1,8 +1,6 @@
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Web;
 using MudBlazor;
 using MudBlazorApp.Models;
-using System;
 using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Json;
@@ -10,163 +8,126 @@ using System.Threading.Tasks;
 
 namespace MudBlazorApp.Pages
 {
-    public partial class Country : CountryBase
+    // Local definition as a workaround for the reference issue
+    public class CountryRequest
     {
-     
+        public string Name { get; set; } = string.Empty;
+        public bool Verified { get; set; }
     }
-    public class CountryBase : ComponentBase
+
+    public partial class Country : ComponentBase
     {
-        protected string searchString = "";
-    private bool sortNameByLength;
-    protected int elementsCount = 0;
-    
-    [Inject]
-    private HttpClient Http { get; set; } = default!;
+        [Inject] private HttpClient Http { get; set; } = default!;
+        [Inject] private NavigationManager NavigationManager { get; set; } = default!;
+        [Inject] private ISnackbar Snackbar { get; set; } = default!;
 
-    
-    
-    protected CountryModel? selectedCountry = null;
-    protected bool isLoadingDetails = false;
-    protected bool showingDetails = false;
-    
-    [Parameter]
-    public int? Id { get; set; }
+        [Parameter]
+        public int? Id { get; set; }
 
-        [Inject]
-        private ISnackbar Snackbar { get; set; } = default!;
-
-        [Inject]
-        private NavigationManager Navigation { get; set; } = default!;
-
-        protected string SortOption = "custom";
-        protected List<CountryModel> Countries { get; set; } = new();
-        protected bool IsLoading { get; set; } = true;
-        protected string ErrorMessage { get; set; } = string.Empty;
+        private List<CountryModel> _countries = new();
+        private CountryModel? _selectedCountry;
+        private bool _showingDetails;
+        private bool _dialogVisible;
+        private string _newCountryName = string.Empty;
 
         protected override async Task OnInitializedAsync()
         {
             await LoadCountriesAsync();
         }
-        
+
         protected override async Task OnParametersSetAsync()
         {
-            // This runs every time the parameters change (including when the component first loads)
-            // If ID parameter is provided, load the country details
-            if (Id.HasValue)
+            if (Id.HasValue && Id != _selectedCountry?.Id)
             {
                 await LoadCountryDetails(Id.Value);
             }
-            else
+            else if (!Id.HasValue)
             {
-                // If no ID is provided, show the list view
-                showingDetails = false;
-                selectedCountry = null;
+                _showingDetails = false;
+                _selectedCountry = null;
             }
         }
 
         private async Task LoadCountriesAsync()
         {
-            IsLoading = true;
-            Countries.Clear();
-            ErrorMessage = string.Empty;
-
             try
-            {   
-                // Fetch data from our API
-                var apiUrl = "http://localhost:5200/api/country"; // Using our minimal API
-                var result = await Http.GetFromJsonAsync<List<CountryModel>>(apiUrl);
-                
+            {
+                var result = await Http.GetFromJsonAsync<List<CountryModel>>("http://localhost:5200/api/country");
                 if (result != null)
                 {
-                    Countries = result;
+                    _countries = result;
                 }
             }
-            catch (Exception ex)
+            catch (System.Exception ex)
             {
-                ErrorMessage = $"Error: {ex.Message}";
-                // Fallback to mock data
-                Countries = new List<CountryModel>
-                {
-                    new CountryModel { Id = 1, Name = "United States (Mock)", Verified = true },
-                    new CountryModel { Id = 2, Name = "Canada (Mock)", Verified = true },
-                    new CountryModel { Id = 3, Name = "Mexico (Mock)", Verified = true },
-                    new CountryModel { Id = 4, Name = "United Kingdom (Mock)", Verified = true }
-                };
+                Snackbar.Add($"Error loading countries: {ex.Message}", Severity.Error);
+            }
+        }
 
-                Snackbar.Add("Using mock data because API is not available", Severity.Warning);
-                
-                // If ID parameter is provided, try to find in mock data
-                if (Id.HasValue)
+        private async Task LoadCountryDetails(int countryId)
+        {
+            try
+            {
+                var result = await Http.GetFromJsonAsync<CountryModel>($"http://localhost:5200/api/country/{countryId}");
+                if (result != null)
                 {
-                    var mockCountry = Countries.FirstOrDefault(c => c.Id == Id.Value);
-                    if (mockCountry != null)
-                    {
-                        selectedCountry = mockCountry;
-                        showingDetails = true;
-                    }
+                    _selectedCountry = result;
+                    _showingDetails = true;
                 }
             }
-            finally
+            catch (System.Exception ex)
             {
-                IsLoading = false;
+                Snackbar.Add($"Error loading country details: {ex.Message}", Severity.Error);
+            }
+        }
+
+        private void RowClicked(TableRowClickEventArgs<CountryModel> args)
+        {
+            if (args.Item != null)
+            {
+                NavigationManager.NavigateTo($"/country/{args.Item.Id}");
+            }
+        }
+
+        private void AddNew()
+        {
+            _newCountryName = string.Empty;
+            _dialogVisible = true;
+        }
+
+        private void CancelAddCountry()
+        {
+            _dialogVisible = false;
+        }
+
+        private async Task SaveCountryAsync()
+        {
+            if (string.IsNullOrWhiteSpace(_newCountryName))
+            {
+                Snackbar.Add("Country name cannot be empty.", Severity.Warning);
+                return;
+            }
+
+            var newCountry = new CountryRequest { Name = _newCountryName, Verified = false };
+            var response = await Http.PostAsJsonAsync("http://localhost:5200/api/country", newCountry);
+
+            if (response.IsSuccessStatusCode)
+            {
+                Snackbar.Add("Country added successfully!", Severity.Success);
+                _dialogVisible = false;
+                await LoadCountriesAsync();
                 StateHasChanged();
             }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                Snackbar.Add($"Error adding country: {errorContent}", Severity.Error);
+            }
         }
 
-        protected void AddNew()
+        private void BackToList()
         {
-            // Stub: handle add new
-            Snackbar.Add("Add New functionality not implemented yet", Severity.Info);
-        }
-
-        protected void Edit(CountryModel country)
-        {
-            // Stub: handle edit
-        }
-
-        protected void BackToList()
-        {
-            // Navigate back to the list URL
-            Navigation.NavigateTo("/country");
-        }
-
-        protected async Task LoadCountryDetails(int id)
-    {
-        try
-        {
-            isLoadingDetails = true;
-            
-            // Fetch the detailed country data
-            var apiUrl = $"http://localhost:5200/api/country/{id}";
-            selectedCountry = await Http.GetFromJsonAsync<CountryModel>(apiUrl);
-            
-            // Show details view
-            showingDetails = true;
-        }
-        catch (Exception ex)
-        {
-            Snackbar.Add($"Error loading details: {ex.Message}", Severity.Error);
-        }
-        finally
-        {
-            isLoadingDetails = false;
-        }
-    }
-    
-    protected void ViewDetails(CountryModel country)
-    {
-        // Navigate to the country details URL
-        Navigation.NavigateTo($"/country/{country.Id}");
-    }   
-
-        public class ConfigSettings
-        {
-            public ConnectionStringsConfig? ConnectionStrings { get; set; }
-        }
-
-        public class ConnectionStringsConfig
-        {
-            public string? DefaultConnection { get; set; }
+            NavigationManager.NavigateTo("/country");
         }
     }
 }

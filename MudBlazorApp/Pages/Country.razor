@@ -1,99 +1,62 @@
 @page "/country"
-@page "/country/{id:int}"
-@inherits CountryBase
+@page "/country/{Id:int}"
 @using MudBlazor
+@using MudBlazorApp.Models
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Components.Web
 
-<MudPaper Class="pa-4" Style="max-width: 33%;">
-    @if (IsLoading)
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    @if (_showingDetails)
     {
-        <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
-        <MudText Align="Align.Center">Loading countries...</MudText>
-    }
-    else if (showingDetails && selectedCountry != null)
-    {
-        <!-- Details View -->
-        <MudCard>
-            <MudCardHeader>
-                <CardHeaderContent>
-                    <MudText Typo="Typo.h5">Country Details</MudText>
-                </CardHeaderContent>
-            </MudCardHeader>
-            <MudCardContent>
-                @if (isLoadingDetails)
-                {
-                    <MudProgressLinear Color="Color.Primary" Indeterminate="true" Class="my-7" />
-                    <MudText Align="Align.Center">Loading details...</MudText>
-                }
-                else 
-                {
-                    <MudTable Items="new[] { selectedCountry }" Hover="true" Dense="true" Elevation="0">
-                        <HeaderContent>
-                            <MudTh Style="background-color:black; color:white;">ID</MudTh>
-                            <MudTh Style="background-color:black; color:white;">Name</MudTh>
-                            <MudTh Style="background-color:black; color:white;">Verified</MudTh>
-                            <MudTh Style="background-color:black; color:white;">Mode</MudTh>
-                            <MudTh Style="background-color:black; color:white;">Created On</MudTh>
-                            <MudTh Style="background-color:black; color:white;">Last Modified</MudTh>
-                        </HeaderContent>
-                        <RowTemplate>
-                            <MudTd DataLabel="ID">@selectedCountry.Id</MudTd>
-                            <MudTd DataLabel="Name">@selectedCountry.Name</MudTd>
-                            <MudTd DataLabel="Verified">@(selectedCountry.Verified ? "Yes" : "No")</MudTd>
-                            <MudTd DataLabel="Mode">@selectedCountry.Mode</MudTd>
-                            <MudTd DataLabel="Created On">@selectedCountry.CreatedOn.ToShortDateString()</MudTd>
-                            <MudTd DataLabel="Last Modified">@selectedCountry.LastModified.ToShortDateString()</MudTd>
-                        </RowTemplate>
-                    </MudTable>
-                }
-            </MudCardContent>
-            <MudCardActions>
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="BackToList">Back to List</MudButton>
-            </MudCardActions>
-        </MudCard>
+        @if (_selectedCountry != null)
+        {
+            <MudPaper Class="pa-4">
+                <MudText Typo="Typo.h4">@_selectedCountry.Name</MudText>
+                <MudText>ID: @_selectedCountry.Id</MudText>
+                <MudText>Verified: @(_selectedCountry.Verified ? "Yes" : "No")</MudText>
+                <MudButton Class="mt-4" Variant="Variant.Filled" Color="Color.Primary" OnClick="@BackToList">Back to List</MudButton>
+            </MudPaper>
+        }
+        else
+        {
+            <MudProgressCircular Indeterminate="true" />
+        }
     }
     else
     {
-        <!-- List View -->
-        @if (!string.IsNullOrEmpty(ErrorMessage))
-        {
-            <MudAlert Severity="Severity.Warning" Class="mb-3">@ErrorMessage</MudAlert>
-        }
-
-        <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.FlexStart" Class="mb-3" Spacing="2">
-            <MudSelect T="string" Label="Sort by" @bind-Value="SortOption" Dense="true" Style="width: 200px;">
-                <MudSelectItem Value="@("custom")">Custom</MudSelectItem>
-                <MudSelectItem Value="@("verified_desc")">Verified DESC</MudSelectItem>
-                <MudSelectItem Value="@("name_asc")">Name ASC</MudSelectItem>
-                <MudSelectItem Value="@("last_modified_desc")">Last Modified DESC</MudSelectItem>
-            </MudSelect>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@AddNew">Add New</MudButton>
-            <MudText Typo="Typo.body2">Results: @Countries.Count</MudText>
-        </MudStack>
-
-        <MudPaper Elevation="0">
-            <MudTable Items="@Countries" Hover="true" Dense="true" Elevation="0" Loading="@IsLoading">
-                <HeaderContent>
-                    <MudTh Style="background-color:black; color:white; width: 50px;"></MudTh>
-                    <MudTh Style="background-color:black; color:white;">ID</MudTh>
-                    <MudTh Style="background-color:black; color:white;">Name</MudTh>
-                    <MudTh Style="background-color:black; color:white;">Verified?</MudTh>
-                    <MudTh Style="background-color:black; color:white;"></MudTh>
-                </HeaderContent>
-                <RowTemplate>
-                    <MudTd>
-                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Size="Size.Small" OnClick="@(() => Edit(context))" />
-                    </MudTd>
-                    <MudTd DataLabel="ID">@context.Id</MudTd>
-                    <MudTd DataLabel="Name">@context.Name</MudTd>
-                    <MudTd DataLabel="Verified">@((context.Verified) ? "Yes" : "No")</MudTd>
-                    <MudTd>
-                        <MudButton Variant="Variant.Text" Size="Size.Small" OnClick="@(() => ViewDetails(context))">View Details</MudButton>
-                    </MudTd>
-                </RowTemplate>
-                <NoRecordsContent>
-                    <MudText>No countries found</MudText>
-                </NoRecordsContent>
-            </MudTable>
-        </MudPaper>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@AddNew" Class="mb-4">Add New</MudButton>
+        
+        <MudTable T="MudBlazorApp.Models.CountryModel" Items="@_countries" Hover="true">
+            <HeaderContent>
+                <MudTh>ID</MudTh>
+                <MudTh>Name</MudTh>
+                <MudTh>Verified</MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Id">@context.Id</MudTd>
+                <MudTd DataLabel="Name">@context.Name</MudTd>
+                <MudTd DataLabel="Verified">@(context.Verified ? "Yes" : "No")</MudTd>
+                <MudTd>
+                    <MudLink Href="@($"/country/{context.Id}")" Color="Color.Primary">View Details</MudLink>
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText>No countries found</MudText>
+            </NoRecordsContent>
+        </MudTable>
     }
-</MudPaper>
+</MudContainer>
+
+<MudDialog Visible="_dialogVisible">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Add New Country</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudTextField T="string" @bind-Value="_newCountryName" Label="Country Name" Required="true" />
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="@CancelAddCountry">Cancel</MudButton>
+        <MudButton Color="Color.Primary" OnClick="@SaveCountryAsync">OK</MudButton>
+    </DialogActions>
+</MudDialog>

@@ -1,5 +1,9 @@
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using System;
+using Dapper;
 using Microsoft.Data.SqlClient;
-using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,7 +12,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("BlazorPolicy", policy =>
     {
-        policy.WithOrigins("http://localhost:5150")
+        policy.WithOrigins("http://localhost:5150") // The Blazor app's address
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
@@ -21,57 +25,76 @@ app.UseCors("BlazorPolicy");
 
 app.MapGet("/", () => "Minimal API is running!");
 
-// Add endpoint for Country data
-app.MapGet("/api/country", async () =>
+// Country list endpoint
+app.MapGet("/api/country", async (IConfiguration config) =>
 {
-    var countries = new List<CountryModel>();
-    
     try
     {
-        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-        if (string.IsNullOrEmpty(connectionString))
-        {
-            return Results.BadRequest("Database connection string is not configured.");
-        }
-
-        using (var connection = new SqlConnection(connectionString))
-        {
-            await connection.OpenAsync();
-            var command = new SqlCommand("SELECT Country_ID, Name, Verfied_Mode_ID FROM Country", connection);
-            
-            using var reader = await command.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
-            {
-                countries.Add(new CountryModel
-                {
-                    Id = reader.GetInt32(0),
-                    Name = reader.GetString(1),
-                    Verified = reader.GetInt16(2) == 1
-                });
-            }
-        }
-
+        var connectionString = config.GetConnectionString("DefaultConnection");
+        using var connection = new SqlConnection(connectionString);
+        var countries = await connection.QueryAsync<CountryModel>("SELECT Country_ID as ID, Name, Verfied_Mode_ID as Verified FROM Country");
         return Results.Ok(countries);
     }
     catch (Exception ex)
     {
-        Console.WriteLine($"Error fetching countries: {ex.Message}");
-        // Provide mock data as a fallback for testing
-        return Results.Ok(new List<CountryModel>
-        {
-            new CountryModel { Id = 1, Name = "United States (Mock)", Verified = true },
-            new CountryModel { Id = 2, Name = "Canada (Mock)", Verified = true },
-            new CountryModel { Id = 3, Name = "Mexico (Mock)", Verified = true },
-            new CountryModel { Id = 4, Name = "United Kingdom (Mock)", Verified = true },
-        });
+        return Results.Problem(ex.Message);
     }
 });
 
-app.Run();
-
-class CountryModel
+// Get country by id
+app.MapGet("/api/country/{id}", async (int id, IConfiguration config) =>
 {
-    public int Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public bool Verified { get; set; }
-}
+    try
+    {
+        var connectionString = config.GetConnectionString("DefaultConnection");
+        using var connection = new SqlConnection(connectionString);
+        var country = await connection.QueryFirstOrDefaultAsync<CountryModel>("SELECT Country_ID as ID, Name, Verfied_Mode_ID as Verified FROM Country WHERE Country_ID = @Id", new { Id = id });
+
+        if (country == null)
+        {
+            return Results.NotFound();
+        }
+
+        return Results.Ok(country);
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
+// Add new country
+app.MapPost("/api/country", async (CountryRequest request, IConfiguration config) =>
+{
+    try
+    {
+        var connectionString = config.GetConnectionString("DefaultConnection");
+        using var connection = new SqlConnection(connectionString);
+
+        var query = "INSERT INTO Country (Name, Verfied_Mode_ID, Sort_Key) VALUES (@Name, @VerifiedModeId, @SortKey); SELECT CAST(SCOPE_IDENTITY() as int);";
+        var newId = await connection.ExecuteScalarAsync<int>(query, new { Name = request.Name, VerifiedModeId = request.Verified ? 1 : 0, SortKey = 0 });
+
+        var newCountry = new CountryModel
+        {
+            Id = newId,
+            Name = request.Name,
+            Verified = request.Verified,
+            Mode = "Standard",
+            CreatedOn = DateTime.Now,
+            LastModified = DateTime.Now
+        };
+
+        return Results.Created($"/api/country/{newId}", newCountry);
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
+// Print a message indicating the server is starting
+Console.WriteLine("API server starting on http://localhost:5200");
+
+// Run the application
+app.Run("http://localhost:5200");
+

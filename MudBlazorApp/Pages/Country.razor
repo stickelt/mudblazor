@@ -24,9 +24,18 @@
     }
     else
     {
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@AddNew" Class="mb-4">Add New</MudButton>
+        <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="@AddNew" Class="mb-4">Add New</MudButton>
+            <MudSelect T="string" Label="Sort by" @bind-Value="_sortOrder" Dense="true">
+                <MudSelectItem Value="@("Name ASC")">Name (ASC)</MudSelectItem>
+                <MudSelectItem Value="@("Name DESC")">Name (DESC)</MudSelectItem>
+                <MudSelectItem Value="@("Id ASC")">Id (ASC)</MudSelectItem>
+                <MudSelectItem Value="@("Id DESC")">Id (DESC)</MudSelectItem>
+                <MudSelectItem Value="@("Custom")">Custom (Verified DESC, Name ASC)</MudSelectItem>
+            </MudSelect>
+        </MudStack>
         
-        <MudTable T="MudBlazorApp.Models.CountryModel" Items="@_countries" Hover="true">
+        <MudTable T="MudBlazorApp.Models.CountryModel" Items="@_sortedCountries" Hover="true">
             <HeaderContent>
                 <MudTh>ID</MudTh>
                 <MudTh>Name</MudTh>

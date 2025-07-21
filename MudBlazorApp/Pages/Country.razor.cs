@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace MudBlazorApp.Pages
 {
@@ -32,6 +33,23 @@ namespace MudBlazorApp.Pages
         private bool _newCountryVerified = false;
         private bool _isEdit = false;
         private int _editingCountryId = 0;
+        private string _sortOrder = "Name ASC";
+
+        private IEnumerable<CountryModel> _sortedCountries
+        {
+            get
+            {
+                return _sortOrder switch
+                {
+                    "Name ASC" => _countries.OrderBy(c => c.Name),
+                    "Name DESC" => _countries.OrderByDescending(c => c.Name),
+                    "Id ASC" => _countries.OrderBy(c => c.Id),
+                    "Id DESC" => _countries.OrderByDescending(c => c.Id),
+                    "Custom" => _countries.OrderByDescending(c => c.Verified).ThenBy(c => c.Name),
+                    _ => _countries
+                };
+            }
+        }
 
         protected override async Task OnInitializedAsync()
         {
@@ -55,7 +73,7 @@ namespace MudBlazorApp.Pages
         {
             try
             {
-                var result = await Http.GetFromJsonAsync<List<CountryModel>>("http://localhost:5200/api/country");
+                var result = await Http.GetFromJsonAsync<List<CountryModel>>("api/country");
                 if (result != null)
                 {
                     _countries = result;
@@ -71,7 +89,7 @@ namespace MudBlazorApp.Pages
         {
             try
             {
-                var result = await Http.GetFromJsonAsync<CountryModel>($"http://localhost:5200/api/country/{countryId}");
+                var result = await Http.GetFromJsonAsync<CountryModel>($"api/country/{countryId}");
                 if (result != null)
                 {
                     _selectedCountry = result;
@@ -127,11 +145,11 @@ namespace MudBlazorApp.Pages
             HttpResponseMessage response;
             if (_isEdit)
             {
-                response = await Http.PutAsJsonAsync($"http://localhost:5200/api/country/{_editingCountryId}", countryRequest);
+                response = await Http.PutAsJsonAsync($"api/country/{_editingCountryId}", countryRequest);
             }
             else
             {
-                response = await Http.PostAsJsonAsync("http://localhost:5200/api/country", countryRequest);
+                response = await Http.PostAsJsonAsync("api/country", countryRequest);
             }
 
             if (response.IsSuccessStatusCode)

@@ -8,30 +8,22 @@ using System.Linq;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add CORS policy for Blazor WebAssembly app
+// Add services to the container.
 builder.Services.AddCors(options =>
 {
-    options.AddDefaultPolicy(builder =>
-    {
-        builder.AllowAnyOrigin()
-               .AllowAnyMethod()
-               .AllowAnyHeader();
-    });
+    options.AddPolicy("CorsPolicy",
+        builder => builder
+        .WithOrigins("http://localhost:5150")
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .SetIsOriginAllowed(origin => true) // Allows all origins
+        .AllowCredentials());
 });
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline
-if (app.Environment.IsDevelopment())
-{
-    app.UseDeveloperExceptionPage();
-}
-
-// Configure CORS - important to add before routing
-app.UseCors();
-
-// Handle OPTIONS requests for CORS preflight
-app.MapMethods("api/{**path}", new[] { "OPTIONS" }, () => Results.Ok());
+// Enable CORS
+app.UseCors("CorsPolicy");
 
 app.MapGet("/", () => "Minimal API is running!");
 
@@ -125,8 +117,8 @@ app.MapPut("/api/country/{id}", async (int id, CountryRequest request, IConfigur
             Id = id,
             Name = request.Name,
             Verified = request.Verified,
-            Mode = "Standard", // Assuming mode remains the same
-            CreatedOn = DateTime.Now, // These might need to be fetched or updated properly
+            Mode = "Standard",
+            CreatedOn = DateTime.Now,
             LastModified = DateTime.Now
         };
 
@@ -138,9 +130,7 @@ app.MapPut("/api/country/{id}", async (int id, CountryRequest request, IConfigur
     }
 });
 
-// Print a message indicating the server is starting
-Console.WriteLine("API server starting on http://localhost:5200");
 
-// Run the application
+Console.WriteLine("API server starting on http://localhost:5200");
 app.Run("http://localhost:5200");
 

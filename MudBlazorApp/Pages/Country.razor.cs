@@ -29,6 +29,9 @@ namespace MudBlazorApp.Pages
         private bool _showingDetails;
         private bool _dialogVisible;
         private string _newCountryName = string.Empty;
+        private bool _newCountryVerified = false;
+        private bool _isEdit = false;
+        private int _editingCountryId = 0;
 
         protected override async Task OnInitializedAsync()
         {
@@ -92,6 +95,17 @@ namespace MudBlazorApp.Pages
         private void AddNew()
         {
             _newCountryName = string.Empty;
+            _newCountryVerified = false;
+            _isEdit = false;
+            _dialogVisible = true;
+        }
+
+        private void EditCountry(CountryModel country)
+        {
+            _newCountryName = country.Name;
+            _newCountryVerified = country.Verified;
+            _isEdit = true;
+            _editingCountryId = country.Id;
             _dialogVisible = true;
         }
 
@@ -108,12 +122,21 @@ namespace MudBlazorApp.Pages
                 return;
             }
 
-            var newCountry = new CountryRequest { Name = _newCountryName, Verified = false };
-            var response = await Http.PostAsJsonAsync("http://localhost:5200/api/country", newCountry);
+            var countryRequest = new CountryRequest { Name = _newCountryName, Verified = _newCountryVerified };
+
+            HttpResponseMessage response;
+            if (_isEdit)
+            {
+                response = await Http.PutAsJsonAsync($"http://localhost:5200/api/country/{_editingCountryId}", countryRequest);
+            }
+            else
+            {
+                response = await Http.PostAsJsonAsync("http://localhost:5200/api/country", countryRequest);
+            }
 
             if (response.IsSuccessStatusCode)
             {
-                Snackbar.Add("Country added successfully!", Severity.Success);
+                Snackbar.Add(_isEdit ? "Country updated successfully!" : "Country added successfully!", Severity.Success);
                 _dialogVisible = false;
                 await LoadCountriesAsync();
                 StateHasChanged();
@@ -121,7 +144,7 @@ namespace MudBlazorApp.Pages
             else
             {
                 var errorContent = await response.Content.ReadAsStringAsync();
-                Snackbar.Add($"Error adding country: {errorContent}", Severity.Error);
+                Snackbar.Add($"Error {(_isEdit ? "updating" : "adding")} country: {errorContent}", Severity.Error);
             }
         }
 

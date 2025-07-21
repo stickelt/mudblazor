@@ -4,24 +4,34 @@ using Microsoft.Extensions.Hosting;
 using System;
 using Dapper;
 using Microsoft.Data.SqlClient;
+using System.Linq;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add CORS policy for Blazor WebAssembly app
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("BlazorPolicy", policy =>
+    options.AddDefaultPolicy(builder =>
     {
-        policy.WithOrigins("http://localhost:5150") // The Blazor app's address
-            .AllowAnyHeader()
-            .AllowAnyMethod();
+        builder.AllowAnyOrigin()
+               .AllowAnyMethod()
+               .AllowAnyHeader();
     });
 });
 
 var app = builder.Build();
 
-// Enable CORS
-app.UseCors("BlazorPolicy");
+// Configure the HTTP request pipeline
+if (app.Environment.IsDevelopment())
+{
+    app.UseDeveloperExceptionPage();
+}
+
+// Configure CORS - important to add before routing
+app.UseCors();
+
+// Handle OPTIONS requests for CORS preflight
+app.MapMethods("api/{**path}", new[] { "OPTIONS" }, () => Results.Ok());
 
 app.MapGet("/", () => "Minimal API is running!");
 
@@ -32,11 +42,13 @@ app.MapGet("/api/country", async (IConfiguration config) =>
     {
         var connectionString = config.GetConnectionString("DefaultConnection");
         using var connection = new SqlConnection(connectionString);
-        var countries = await connection.QueryAsync<CountryModel>("SELECT Country_ID as ID, Name, Verfied_Mode_ID as Verified FROM Country");
+        var countries = await connection.QueryAsync<CountryModel>("SELECT Country_ID as Id, Name, Verfied_Mode_ID as Verified FROM Country");
+        Console.WriteLine($"Found {countries.Count()} countries");
         return Results.Ok(countries);
     }
     catch (Exception ex)
     {
+        Console.WriteLine($"Error getting countries: {ex.Message}");
         return Results.Problem(ex.Message);
     }
 });
@@ -48,7 +60,7 @@ app.MapGet("/api/country/{id}", async (int id, IConfiguration config) =>
     {
         var connectionString = config.GetConnectionString("DefaultConnection");
         using var connection = new SqlConnection(connectionString);
-        var country = await connection.QueryFirstOrDefaultAsync<CountryModel>("SELECT Country_ID as ID, Name, Verfied_Mode_ID as Verified FROM Country WHERE Country_ID = @Id", new { Id = id });
+        var country = await connection.QueryFirstOrDefaultAsync<CountryModel>("SELECT Country_ID as Id, Name, Verfied_Mode_ID as Verified FROM Country WHERE Country_ID = @Id", new { Id = id });
 
         if (country == null)
         {
@@ -85,6 +97,40 @@ app.MapPost("/api/country", async (CountryRequest request, IConfiguration config
         };
 
         return Results.Created($"/api/country/{newId}", newCountry);
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
+// Update country by id
+app.MapPut("/api/country/{id}", async (int id, CountryRequest request, IConfiguration config) =>
+{
+    try
+    {
+        var connectionString = config.GetConnectionString("DefaultConnection");
+        using var connection = new SqlConnection(connectionString);
+
+        var query = "UPDATE Country SET Name = @Name, Verfied_Mode_ID = @VerifiedModeId WHERE Country_ID = @Id";
+        var rowsAffected = await connection.ExecuteAsync(query, new { Id = id, Name = request.Name, VerifiedModeId = request.Verified ? 1 : 0 });
+
+        if (rowsAffected == 0)
+        {
+            return Results.NotFound();
+        }
+
+        var updatedCountry = new CountryModel
+        {
+            Id = id,
+            Name = request.Name,
+            Verified = request.Verified,
+            Mode = "Standard", // Assuming mode remains the same
+            CreatedOn = DateTime.Now, // These might need to be fetched or updated properly
+            LastModified = DateTime.Now
+        };
+
+        return Results.Ok(updatedCountry);
     }
     catch (Exception ex)
     {
